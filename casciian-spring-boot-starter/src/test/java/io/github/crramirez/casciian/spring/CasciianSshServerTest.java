@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 
 /**
  * Tests for the host-key path resolution logic in {@link CasciianSshServer}.
@@ -86,6 +87,17 @@ class CasciianSshServerTest {
         final Path resolved = server.resolveHostKeyPath();
 
         assertThat(resolved.toString()).startsWith(fakeHome.toString());
+    }
+
+    @Test
+    void rejectsBareHomeShorthand() {
+        final CasciianSshProperties props = new CasciianSshProperties();
+        props.setHostKeyPath("~");
+        final CasciianSshServer server = new CasciianSshServer(props, null, null);
+
+        assertThatIllegalStateException()
+                .isThrownBy(server::resolveHostKeyPath)
+                .withMessageContaining("'~'");
     }
 
     @Test

@@ -41,7 +41,6 @@ customer reloads the page.
 
 ```sh
 # from the repository root
-cd code-spring
 ./gradlew :demo-shop:bootRun
 ```
 

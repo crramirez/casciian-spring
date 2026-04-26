@@ -123,9 +123,12 @@ public class CasciianSshServer implements SmartLifecycle {
                 ? CasciianSshProperties.DEFAULT_HOST_KEY_PATH
                 : configured;
         final String expanded;
-        if (raw.startsWith("~/") || raw.equals("~")) {
+        if (raw.startsWith("~/")) {
             expanded = System.getProperty("user.home")
                     + raw.substring(1);
+        } else if (raw.equals("~")) {
+            throw new IllegalStateException(
+                    "Invalid host-key path '~': expected a file path such as '~/hostkey.ser'");
         } else {
             expanded = raw;
         }

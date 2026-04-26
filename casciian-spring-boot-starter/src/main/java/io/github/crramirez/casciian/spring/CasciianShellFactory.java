@@ -199,7 +199,8 @@ public class CasciianShellFactory implements ShellFactory {
         }
 
         SshSessionContext buildContext(final Environment env) {
-            final Map<String, String> envMap = env == null ? Map.of() : env.getEnv();
+            final Map<String, String> envMap =
+                    env == null || env.getEnv() == null ? Map.of() : env.getEnv();
             final String username = envMap.getOrDefault(Environment.ENV_USER, "");
             final String termType = envMap.get(Environment.ENV_TERM);
 
