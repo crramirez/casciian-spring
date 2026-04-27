@@ -10,7 +10,7 @@
       "name": "casciian.ssh.host",
       "type": "java.lang.String",
       "description": "Network interface to bind the SSH listener on.",
-      "defaultValue": "0.0.0.0"
+      "defaultValue": "127.0.0.1"
     },
     {
       "name": "casciian.ssh.port",

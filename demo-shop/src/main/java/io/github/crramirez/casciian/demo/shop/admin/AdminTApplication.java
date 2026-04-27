@@ -84,6 +84,18 @@ public class AdminTApplication extends TApplication {
         refreshList();
     }
 
+    /**
+     * Called by Casciian as the last step of {@link TApplication#run()},
+     * after the event loop has stopped. Restores the operator's terminal
+     * to sane defaults (clears the alt screen, shows the cursor, resets
+     * attributes) so they get a clean prompt back when the TUI session
+     * ends (e.g. {@code File > Exit} or F10).
+     */
+    @Override
+    public void onExit() {
+        restoreConsole();
+    }
+
     private void buildMenus() {
         addFileMenu();
 
