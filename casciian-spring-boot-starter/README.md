@@ -10,9 +10,15 @@ with full access to your Spring beans.
 
 Spring gives you a web view for your users. Sometimes you also want a
 terminal view for operators: a richer alternative to a Spring Shell prompt,
-reachable over SSH so you can log in from anywhere. That's what this starter
-provides. It uses SSH via [Apache MINA SSHD][sshd], with per-connection
-`TApplication` instances so every operator has isolated UI state.
+reachable over SSH. That's what this starter provides. It uses SSH via
+[Apache MINA SSHD][sshd], with per-connection `TApplication` instances so
+every operator has isolated UI state.
+
+By default the SSH listener binds to `127.0.0.1`, so it's only reachable
+from the same host. To expose it on a network interface, set
+`casciian.ssh.host` explicitly (e.g. `0.0.0.0` for all interfaces, or a
+specific IP) — and put it behind appropriate authentication and firewall
+rules before doing so.
 
 For a complete, runnable example see the sibling [`demo-shop`](../demo-shop)
 subproject.
