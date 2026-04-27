@@ -10,10 +10,15 @@ with full access to your Spring beans.
 
 Spring gives you a web view for your users. Sometimes you also want a
 terminal view for operators: a richer alternative to a Spring Shell prompt,
-reachable over SSH so you can log in from anywhere. That's what this starter
-provides. It is modelled on Casciian's telnet demo (`demo.Demo2`) but uses
-SSH via [Apache MINA SSHD][sshd], with per-connection `TApplication`
-instances so every operator has isolated UI state.
+reachable over SSH. That's what this starter provides. It uses SSH via
+[Apache MINA SSHD][sshd], with per-connection `TApplication` instances so
+every operator has isolated UI state.
+
+By default the SSH listener binds to `127.0.0.1`, so it's only reachable
+from the same host. To expose it on a network interface, set
+`casciian.ssh.host` explicitly (e.g. `0.0.0.0` for all interfaces, or a
+specific IP) — and put it behind appropriate authentication and firewall
+rules before doing so.
 
 For a complete, runnable example see the sibling [`demo-shop`](../demo-shop)
 subproject.
@@ -61,7 +66,7 @@ windows, menus, and widgets you want.
 casciian:
   ssh:
     enabled: true        # default
-    host: 0.0.0.0        # default
+    host: 127.0.0.1      # default
     port: 2222           # default
     username: admin
     password: change-me
@@ -84,7 +89,7 @@ ssh admin@localhost -p 2222
 | Property                      | Default                      | Description                                       |
 | ----------------------------- | ---------------------------- | ------------------------------------------------- |
 | `casciian.ssh.enabled`        | `true`                       | Turn the whole auto-configuration off.            |
-| `casciian.ssh.host`           | `0.0.0.0`                    | Interface to bind.                                |
+| `casciian.ssh.host`           | `127.0.0.1`                  | Interface to bind.                                |
 | `casciian.ssh.port`           | `2222`                       | TCP port.                                         |
 | `casciian.ssh.username`       | —                            | Username for the default password auth.           |
 | `casciian.ssh.password`       | —                            | Password for the default password auth.           |
