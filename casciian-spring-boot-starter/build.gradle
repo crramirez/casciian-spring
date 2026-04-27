@@ -2,6 +2,8 @@ plugins {
     id 'java-library'
     id 'maven-publish'
     id 'signing'
+    id 'idea'
+    id 'net.researchgate.release' version '3.1.0'
 }
 
 group = 'io.github.crramirez'
@@ -12,6 +14,12 @@ java {
     }
     withSourcesJar()
     withJavadocJar()
+}
+
+idea {
+    module {
+        downloadSources = true
+    }
 }
 
 repositories {
@@ -127,6 +135,27 @@ signing {
     }
 }
 
+tasks.register('publishToLocalStaging') {
+    group = 'publishing'
+    description = 'Publishes signed artifacts to build/staging-repo (for Central Portal bundling).'
+    dependsOn(
+            'publishMavenJavaPublicationToLocalStagingRepository'
+    )
+}
+
+tasks.register('centralBundleZip', Zip) {
+    group = 'publishing'
+    description = 'Creates a Maven-layout ZIP bundle for Sonatype Central Portal upload.'
+    dependsOn('publishToLocalStaging')
+
+    from(layout.buildDirectory.dir("staging-repo"))
+    archiveBaseName.set("casciian-central")
+    archiveVersion.set(project.version.toString())
+    destinationDirectory.set(layout.buildDirectory.dir("central-bundle"))
+
+    // Result: build/central-bundle/casciian-central-<version>.zip
+}
+
 tasks.javadoc {
     options.memberLevel = JavadocMemberLevel.PROTECTED
     options.author = true
@@ -135,4 +164,15 @@ tasks.javadoc {
     // The starter's public API is small; be lenient about missing doc comments
     // on the non-public internals.
     options.addStringOption('Xdoclint:none', '-quiet')
+}
+
+release {
+    preTagCommitMessage = '[release] prepare release '
+    tagCommitMessage = '[release] '
+    newVersionCommitMessage = '[release] prepare next '
+    tagTemplate = 'v${version}'
+}
+
+tasks.named('afterReleaseBuild') {
+    dependsOn 'jar', 'publishToLocalStaging', 'centralBundleZip'
 }
