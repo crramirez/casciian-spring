@@ -96,13 +96,10 @@ public class AdminTApplication extends TApplication {
      * Called by Casciian as the last step of {@link TApplication#run()},
      * after the event loop has stopped. Sends an ANSI clear-screen + cursor
      * home sequence to the operator's terminal so they get a clean prompt
-     * back when the TUI session ends (e.g. {@code File &gt; Exit} or F10).
+     * back when the TUI session ends (e.g. {@code File > Exit} or F10).
      */
     @Override
     public void onExit() {
-        if (terminalOutput == null) {
-            return;
-        }
         try {
             // ESC[2J clears the screen; ESC[H moves the cursor to the top-left.
             terminalOutput.write(new byte[] {0x1B, '[', '2', 'J', 0x1B, '[', 'H'});
