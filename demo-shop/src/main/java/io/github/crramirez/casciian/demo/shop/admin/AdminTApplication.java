@@ -9,6 +9,7 @@
  */
 package io.github.crramirez.casciian.demo.shop.admin;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
@@ -58,6 +59,12 @@ public class AdminTApplication extends TApplication {
     private final ProductRepository products;
 
     /**
+     * The remote terminal's output stream. Held so that {@link #onExit()}
+     * can clear the operator's screen when the TUI shuts down.
+     */
+    private final OutputStream terminalOutput;
+
+    /**
      * Cached snapshot of the products as last loaded into the list, indexed
      * the same way the {@link TList} indexes its items so we can map a
      * selection back to a {@link Product#getId()}.
@@ -79,9 +86,32 @@ public class AdminTApplication extends TApplication {
                              final ProductRepository products) throws UnsupportedEncodingException {
         super(input, output);
         this.products = products;
+        this.terminalOutput = output;
         buildMenus();
         buildMainWindow();
         refreshList();
+    }
+
+    /**
+     * Called by Casciian as the last step of {@link TApplication#run()},
+     * after the event loop has stopped. Sends an ANSI clear-screen + cursor
+     * home sequence to the operator's terminal so they get a clean prompt
+     * back when the TUI session ends (e.g. {@code File &gt; Exit} or F10).
+     */
+    @Override
+    public void onExit() {
+        if (terminalOutput == null) {
+            return;
+        }
+        try {
+            // ESC[2J clears the screen; ESC[H moves the cursor to the top-left.
+            terminalOutput.write(new byte[] {0x1B, '[', '2', 'J', 0x1B, '[', 'H'});
+            terminalOutput.flush();
+        } catch (final IOException e) {
+            // The remote side has likely already gone away; nothing useful
+            // we can do here.
+            LOGGER.debug("Could not clear terminal on TUI exit", e);
+        }
     }
 
     private void buildMenus() {

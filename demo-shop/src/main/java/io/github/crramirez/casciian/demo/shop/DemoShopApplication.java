@@ -35,19 +35,6 @@ public class DemoShopApplication {
      * @param args command line arguments
      */
     public static void main(final String[] args) {
-        Runtime.getRuntime().addShutdownHook(new Thread(DemoShopApplication::clearConsole, "demo-shop-clear-console"));
         SpringApplication.run(DemoShopApplication.class, args);
-    }
-
-    /**
-     * Clears the controlling terminal using the standard ANSI sequence so the
-     * operator gets a clean prompt back when the demo exits. The output is
-     * flushed but any {@link java.io.IOException} is swallowed because the
-     * process is on its way out.
-     */
-    private static void clearConsole() {
-        // ESC[2J clears the screen; ESC[H moves the cursor to the top-left.
-        System.out.print("\033[2J\033[H");
-        System.out.flush();
     }
 }
