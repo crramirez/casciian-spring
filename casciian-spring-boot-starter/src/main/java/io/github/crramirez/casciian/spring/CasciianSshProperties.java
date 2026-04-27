@@ -23,8 +23,8 @@ public class CasciianSshProperties {
     /** Default listen port (non-privileged so the application does not need root). */
     public static final int DEFAULT_PORT = 2222;
 
-    /** Default listen address (all interfaces). */
-    public static final String DEFAULT_HOST = "0.0.0.0";
+    /** Default listen address (loopback only, for safety). */
+    public static final String DEFAULT_HOST = "127.0.0.1";
 
     /** Default location of the persisted SSH host key, relative to the user home. */
     public static final String DEFAULT_HOST_KEY_PATH = "~/.casciian/ssh_host_key";
