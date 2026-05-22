@@ -9,6 +9,8 @@
  */
 package io.github.crramirez.casciian.spring;
 
+import io.github.crramirez.casciian.spring.client.CasciianConsoleProtocol;
+
 import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -42,7 +44,7 @@ import casciian.TApplication;
  * containerized deployments where {@code docker exec}, {@code kubectl exec}
  * or ArgoCD already provide an authenticated shell. The Spring-side
  * application binds a socket file (typically under {@code /tmp}), and the
- * tiny {@link CasciianConsoleClient} bundled in the same JAR connects to
+ * tiny {@link io.github.crramirez.casciian.spring.client.CasciianConsoleClient CasciianConsoleClient} bundled in the same JAR connects to
  * that socket to render the TUI on the user's terminal.</p>
  *
  * <p>Frames received from the client are demultiplexed by
@@ -303,9 +305,9 @@ public class CasciianUnixSocketServer implements SmartLifecycle {
      * conventions: two length-prefixed UTF-8 strings followed by two
      * big-endian {@code int}s.
      */
-    record InitFrame(String username, String terminalType, int columns, int rows) {
+    public record InitFrame(String username, String terminalType, int columns, int rows) {
 
-        static InitFrame decode(final byte[] payload) throws IOException {
+        public static InitFrame decode(final byte[] payload) throws IOException {
             try (DataInputStream in = new DataInputStream(
                     new java.io.ByteArrayInputStream(payload))) {
                 final String user = in.readUTF();

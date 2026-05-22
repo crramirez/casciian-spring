@@ -116,7 +116,7 @@ java -jar /app/app.jar console
 The `console` argument tells the application's `main` method to bypass
 Spring entirely and act as a thin terminal client that connects to the
 already-running JVM via the configured socket path. The class behind it
-is `io.github.crramirez.casciian.spring.CasciianConsoleClient` — wire it
+is `io.github.crramirez.casciian.spring.client.CasciianConsoleClient` — wire it
 into your own `main` like this:
 
 ```java

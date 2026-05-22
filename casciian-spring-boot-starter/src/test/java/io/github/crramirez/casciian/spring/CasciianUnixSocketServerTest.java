@@ -9,6 +9,8 @@
  */
 package io.github.crramirez.casciian.spring;
 
+import io.github.crramirez.casciian.spring.client.CasciianConsoleProtocol;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;

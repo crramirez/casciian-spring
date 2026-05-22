@@ -7,7 +7,7 @@
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
-package io.github.crramirez.casciian.spring;
+package io.github.crramirez.casciian.spring.client;
 
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
@@ -64,8 +64,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public final class CasciianConsoleClient {
 
-    /** Default socket path, matching {@link CasciianUnixSocketProperties}. */
-    public static final String DEFAULT_SOCKET_PATH = CasciianUnixSocketProperties.DEFAULT_PATH;
+    /** Default socket path, matching the server-side default. */
+    public static final String DEFAULT_SOCKET_PATH = "/tmp/casciian.sock";
 
     /** Argument value that triggers console mode in a host application's main. */
     public static final String CONSOLE_ARGUMENT = "console";

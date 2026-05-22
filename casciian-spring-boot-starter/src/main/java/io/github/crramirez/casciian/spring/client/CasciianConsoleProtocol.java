@@ -7,7 +7,7 @@
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
-package io.github.crramirez.casciian.spring;
+package io.github.crramirez.casciian.spring.client;
 
 /**
  * Wire protocol shared by {@link CasciianUnixSocketServer} and

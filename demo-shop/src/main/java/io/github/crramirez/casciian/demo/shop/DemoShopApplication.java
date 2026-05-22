@@ -12,7 +12,7 @@ package io.github.crramirez.casciian.demo.shop;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-import io.github.crramirez.casciian.spring.CasciianConsoleClient;
+import io.github.crramirez.casciian.spring.client.CasciianConsoleClient;
 
 /**
  * Entry point for the demo shop. The application exposes:
