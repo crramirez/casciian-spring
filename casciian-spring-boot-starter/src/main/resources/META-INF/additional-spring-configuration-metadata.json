@@ -38,6 +38,24 @@
       "name": "casciian.ssh.banner",
       "type": "java.lang.String",
       "description": "Optional banner text sent during SSH user-auth."
+    },
+    {
+      "name": "casciian.unix-socket.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Whether the Casciian Unix-domain-socket listener should start.",
+      "defaultValue": false
+    },
+    {
+      "name": "casciian.unix-socket.path",
+      "type": "java.lang.String",
+      "description": "Filesystem path where the Unix-domain socket file is created. A leading '~' is expanded to the user home.",
+      "defaultValue": "/tmp/casciian.sock"
+    },
+    {
+      "name": "casciian.unix-socket.permissions",
+      "type": "java.lang.String",
+      "description": "POSIX file permissions for the socket file, in 3- or 4-digit octal form (e.g. '600').",
+      "defaultValue": "600"
     }
   ]
 }
