@@ -9,6 +9,8 @@
  */
 package io.github.crramirez.casciian.spring;
 
+import io.github.crramirez.casciian.spring.client.CasciianConsoleProtocol;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
@@ -28,7 +30,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class CasciianUnixSocketProperties {
 
     /** Default location of the Unix-domain socket file. */
-    public static final String DEFAULT_PATH = "/tmp/casciian.sock";
+    public static final String DEFAULT_PATH = CasciianConsoleProtocol.DEFAULT_SOCKET_PATH;
 
     /**
      * POSIX-style permission string (3 octal digits) applied to the socket

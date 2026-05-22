@@ -64,8 +64,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public final class CasciianConsoleClient {
 
-    /** Default socket path, matching the server-side default. */
-    public static final String DEFAULT_SOCKET_PATH = "/tmp/casciian.sock";
+    /** Default socket path, matching {@link CasciianConsoleProtocol#DEFAULT_SOCKET_PATH}. */
+    public static final String DEFAULT_SOCKET_PATH = CasciianConsoleProtocol.DEFAULT_SOCKET_PATH;
 
     /** Argument value that triggers console mode in a host application's main. */
     public static final String CONSOLE_ARGUMENT = "console";

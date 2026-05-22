@@ -68,6 +68,9 @@ public final class CasciianConsoleProtocol {
     /** Maximum accepted payload length per frame, to bound memory use. */
     public static final int MAX_PAYLOAD_LENGTH = 64 * 1024;
 
+    /** Default location of the Unix-domain socket file. */
+    public static final String DEFAULT_SOCKET_PATH = "/tmp/casciian.sock";
+
     private CasciianConsoleProtocol() {
         // Constants only.
     }
