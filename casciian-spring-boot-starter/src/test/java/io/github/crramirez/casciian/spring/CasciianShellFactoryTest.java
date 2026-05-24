@@ -168,7 +168,7 @@ class CasciianShellFactoryTest {
         assertThat(recording.registeredSignals).singleElement()
                 .satisfies(s -> assertThat(s).containsExactly(Signal.WINCH));
         assertThat(recording.removedCount).isEqualTo(1);
-        final SignalListener listener = recording.listeners.get(0);
+        final SignalListener listener = recording.listeners.getFirst();
 
         // Wrapper started at the SSH-advertised geometry.
         final SessionInfo sessionInfo = (SessionInfo) factory.lastInput;
@@ -222,8 +222,8 @@ class CasciianShellFactoryTest {
         // Reading through the wrapper must observe the original stream's
         // bytes; otherwise Casciian would never see SSH input.
         final InputStream wrapped = factory.lastInput;
-        assertThat(wrapped.read()).isEqualTo((int) 'h');
-        assertThat(wrapped.read()).isEqualTo((int) 'i');
+        assertThat(wrapped.read()).isEqualTo('h');
+        assertThat(wrapped.read()).isEqualTo('i');
         assertThat(wrapped.read()).isEqualTo(-1);
     }
 

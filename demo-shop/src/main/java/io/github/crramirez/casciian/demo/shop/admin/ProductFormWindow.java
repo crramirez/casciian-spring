@@ -100,6 +100,7 @@ final class ProductFormWindow extends TWindow {
                 submitAction, null);
 
         addLabel("Stock:", 2, row);
+        //noinspection UnusedAssignment
         stockField = addField(FIELD_COLUMN, row++, 8, false,
                 Integer.toString(target.getStock()),
                 submitAction, null);

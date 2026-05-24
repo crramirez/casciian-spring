@@ -145,9 +145,4 @@ public class CasciianSshServer implements SmartLifecycle {
         }
         return path;
     }
-
-    /** Package-private accessor for tests. */
-    SshServer getSshServerForTesting() {
-        return sshServer.get();
-    }
 }

@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import casciian.backend.SessionInfo;
+import org.springframework.lang.NonNull;
 
 /**
  * {@link InputStream} adapter for the Unix-socket transport that demultiplexes
@@ -198,7 +199,7 @@ final class UnixSessionInfoInputStream extends InputStream implements SessionInf
     }
 
     @Override
-    public int read(final byte[] b, final int off, final int len) throws IOException {
+    public int read(@NonNull final byte[] b, final int off, final int len) throws IOException {
         return pipe.read(b, off, len);
     }
 

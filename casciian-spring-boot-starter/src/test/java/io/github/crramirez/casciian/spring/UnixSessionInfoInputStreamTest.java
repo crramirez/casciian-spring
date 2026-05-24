@@ -63,7 +63,7 @@ class UnixSessionInfoInputStreamTest {
                 new ByteArrayInputStream(raw.toByteArray()), "bob", 80, 24, "test")) {
             // Block until the data frame arrives so we know the demux
             // thread already processed the RESIZE frame above it.
-            assertThat(in.read()).isEqualTo((int) 'x');
+            assertThat(in.read()).isEqualTo('x');
             assertThat(in.getWindowWidth()).isEqualTo(132);
             assertThat(in.getWindowHeight()).isEqualTo(50);
         }

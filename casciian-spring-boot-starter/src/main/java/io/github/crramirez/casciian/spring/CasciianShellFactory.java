@@ -58,7 +58,7 @@ public class CasciianShellFactory implements ShellFactory {
     }
 
     @Override
-    public Command createShell(final ChannelSession channel) throws IOException {
+    public Command createShell(final ChannelSession channel) {
         return new CasciianShellCommand(channel, applicationFactory);
     }
 
@@ -207,14 +207,6 @@ public class CasciianShellFactory implements ShellFactory {
             final String remote = clientAddress == null ? null : clientAddress.toString();
 
             return new SshSessionContext(username, remote, termType, columns, rows);
-        }
-
-        /**
-         * Package-private accessor used by tests to verify that exactly one
-         * application was built per shell invocation.
-         */
-        TApplication getApplicationForTesting() {
-            return application.get();
         }
 
         private static int parseInt(final String value) {

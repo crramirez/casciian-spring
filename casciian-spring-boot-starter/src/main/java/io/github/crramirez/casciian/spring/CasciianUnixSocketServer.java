@@ -299,11 +299,6 @@ public class CasciianUnixSocketServer implements SmartLifecycle {
         return PosixFilePermissions.fromString(new String(rwx));
     }
 
-    /** Package-private accessor for tests. */
-    Path getSocketPathForTesting() {
-        return socketPath.get();
-    }
-
     /**
      * Decoded INIT frame payload. The format mirrors {@link DataInputStream}
      * conventions: two length-prefixed UTF-8 strings followed by two

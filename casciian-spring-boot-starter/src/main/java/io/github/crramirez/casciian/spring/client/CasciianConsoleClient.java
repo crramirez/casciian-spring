@@ -293,6 +293,9 @@ public final class CasciianConsoleClient {
                     return;
                 }
                 try {
+                    // Intentional low-frequency polling: POSIX terminals do not
+                    // provide a portable resize event to this in-container client.
+                    //noinspection BusyWait
                     Thread.sleep(1000);
                 } catch (InterruptedException ie) {
                     Thread.currentThread().interrupt();
