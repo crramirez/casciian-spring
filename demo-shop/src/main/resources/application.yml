@@ -24,6 +24,10 @@ casciian:
     username: admin
     password: admin
     banner: "Welcome to the Casciian Demo Shop admin TUI"
+  unix-socket:
+    enabled: true
+    path: /tmp/casciian.sock
+    permissions: "600"
 
 logging:
   level:

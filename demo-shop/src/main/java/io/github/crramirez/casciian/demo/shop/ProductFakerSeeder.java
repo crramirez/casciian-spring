@@ -104,8 +104,7 @@ class ProductFakerSeeder {
     Product generate(final int index) {
         final String name = capitalize(faker.commerce().productName());
         final String description = faker.lorem().sentence(12);
-        // Faker returns prices as locale-formatted strings (e.g. "12.34");
-        // generate the number ourselves so we control precision and locale.
+        // Generate prices locally so precision and locale stay under our control.
         final BigDecimal price = BigDecimal.valueOf(0.5 + random.nextDouble() * 199.5)
                 .setScale(2, RoundingMode.HALF_UP);
         final int stock = random.nextInt(200);

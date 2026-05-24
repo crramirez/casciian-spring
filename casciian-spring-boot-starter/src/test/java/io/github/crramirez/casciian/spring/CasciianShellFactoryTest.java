@@ -83,8 +83,9 @@ class CasciianShellFactoryTest {
         // SshSessionInfoInputStream so Casciian's ECMA48 backend can read
         // the PTY size as a SessionInfo. The wrapper must still delegate
         // reads to the original SSH stream.
-        assertThat(factory.lastInput).isInstanceOf(SessionInfo.class);
-        assertThat(factory.lastInput).isNotSameAs(in);
+        assertThat(factory.lastInput)
+                .isInstanceOf(SessionInfo.class)
+                .isNotSameAs(in);
         final SessionInfo sessionInfo = (SessionInfo) factory.lastInput;
         assertThat(sessionInfo.getWindowWidth()).isEqualTo(120);
         assertThat(sessionInfo.getWindowHeight()).isEqualTo(40);
@@ -167,7 +168,7 @@ class CasciianShellFactoryTest {
         assertThat(recording.registeredSignals).singleElement()
                 .satisfies(s -> assertThat(s).containsExactly(Signal.WINCH));
         assertThat(recording.removedCount).isEqualTo(1);
-        final SignalListener listener = recording.listeners.get(0);
+        final SignalListener listener = recording.listeners.getFirst();
 
         // Wrapper started at the SSH-advertised geometry.
         final SessionInfo sessionInfo = (SessionInfo) factory.lastInput;
@@ -221,8 +222,8 @@ class CasciianShellFactoryTest {
         // Reading through the wrapper must observe the original stream's
         // bytes; otherwise Casciian would never see SSH input.
         final InputStream wrapped = factory.lastInput;
-        assertThat(wrapped.read()).isEqualTo((int) 'h');
-        assertThat(wrapped.read()).isEqualTo((int) 'i');
+        assertThat(wrapped.read()).isEqualTo('h');
+        assertThat(wrapped.read()).isEqualTo('i');
         assertThat(wrapped.read()).isEqualTo(-1);
     }
 

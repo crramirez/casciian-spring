@@ -13,8 +13,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
 import org.apache.sshd.server.Signal;
@@ -58,7 +58,7 @@ public class CasciianShellFactory implements ShellFactory {
     }
 
     @Override
-    public Command createShell(final ChannelSession channel) throws IOException {
+    public Command createShell(final ChannelSession channel) {
         return new CasciianShellCommand(channel, applicationFactory);
     }
 
@@ -73,11 +73,10 @@ public class CasciianShellFactory implements ShellFactory {
 
         private InputStream in;
         private OutputStream out;
-        private OutputStream err;
         private ExitCallback exitCallback;
 
-        private volatile Thread worker;
-        private volatile TApplication application;
+        private final AtomicReference<Thread> worker = new AtomicReference<>();
+        private final AtomicReference<TApplication> application = new AtomicReference<>();
 
         CasciianShellCommand(final ChannelSession channel,
                              final CasciianTApplicationFactory applicationFactory) {
@@ -96,8 +95,8 @@ public class CasciianShellFactory implements ShellFactory {
         }
 
         @Override
-        public void setErrorStream(final OutputStream err) {
-            this.err = err;
+        public void setErrorStream(final OutputStream ignored) {
+            // Casciian renders terminal output on stdout; stderr is unused.
         }
 
         @Override
@@ -126,10 +125,10 @@ public class CasciianShellFactory implements ShellFactory {
                     }
                 }
             };
-            worker = Thread.ofVirtual()
+            worker.set(Thread.ofVirtual()
                     .name("casciian-ssh-" + context.username() + "-"
                             + System.identityHashCode(channel))
-                    .start(body);
+                    .start(body));
         }
 
         /**
@@ -148,26 +147,23 @@ public class CasciianShellFactory implements ShellFactory {
          */
         SignalListener newWinchListener(final Environment env,
                                         final SshSessionInfoInputStream sessionInput) {
-            return new SignalListener() {
-                @Override
-                public void signal(final Channel ignored, final Signal sig) {
-                    if (sig != Signal.WINCH || env == null) {
-                        return;
-                    }
-                    final Map<String, String> envMap = env.getEnv();
-                    if (envMap == null) {
-                        return;
-                    }
-                    final int columns = parseInt(envMap.get(Environment.ENV_COLUMNS));
-                    final int rows = parseInt(envMap.get(Environment.ENV_LINES));
-                    sessionInput.setWindowSize(columns, rows);
+            return (ignored, sig) -> {
+                if (sig != Signal.WINCH || env == null) {
+                    return;
                 }
+                final Map<String, String> envMap = env.getEnv();
+                if (envMap == null) {
+                    return;
+                }
+                final int columns = parseInt(envMap.get(Environment.ENV_COLUMNS));
+                final int rows = parseInt(envMap.get(Environment.ENV_LINES));
+                sessionInput.setWindowSize(columns, rows);
             };
         }
 
         @Override
         public void destroy(final ChannelSession ignored) {
-            final Thread t = worker;
+            final Thread t = worker.get();
             if (t != null) {
                 t.interrupt();
             }
@@ -177,16 +173,14 @@ public class CasciianShellFactory implements ShellFactory {
                                     final InputStream sessionInput) {
             int exitCode = 0;
             try {
-                application = applicationFactory.create(sessionInput, out, context);
-                if (application == null) {
+                final TApplication created = applicationFactory.create(sessionInput, out, context);
+                application.set(created);
+                if (created == null) {
                     throw new IllegalStateException(
                             "CasciianTApplicationFactory returned null");
                 }
-                application.run();
-            } catch (InterruptedException ie) {
-                Thread.currentThread().interrupt();
-                exitCode = 130; // conventional 128 + SIGINT
-            } catch (Exception e) {
+                created.run();
+            } catch (IOException | RuntimeException e) {
                 LOG.warn("Casciian SSH session for user '{}' terminated with error",
                         context.username(), e);
                 exitCode = 1;
@@ -213,14 +207,6 @@ public class CasciianShellFactory implements ShellFactory {
             final String remote = clientAddress == null ? null : clientAddress.toString();
 
             return new SshSessionContext(username, remote, termType, columns, rows);
-        }
-
-        /**
-         * Package-private accessor used by tests to verify that exactly one
-         * application was built per shell invocation.
-         */
-        TApplication getApplicationForTesting() {
-            return application;
         }
 
         private static int parseInt(final String value) {

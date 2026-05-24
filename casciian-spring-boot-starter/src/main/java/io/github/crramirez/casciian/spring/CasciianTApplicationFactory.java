@@ -10,6 +10,7 @@
 package io.github.crramirez.casciian.spring;
 
 import java.io.InputStream;
+import java.io.IOException;
 import java.io.OutputStream;
 
 import casciian.TApplication;
@@ -44,7 +45,8 @@ public interface CasciianTApplicationFactory {
      * @param session metadata about the SSH session (username, pty
      *                geometry, remote address)
      * @return a new, unstarted {@link TApplication} instance
-     * @throws Exception if the application cannot be constructed
+     * @throws IOException if the application cannot be constructed from the
+     *                     supplied terminal streams
      */
-    TApplication create(InputStream input, OutputStream output, SshSessionContext session) throws Exception;
+    TApplication create(InputStream input, OutputStream output, SshSessionContext session) throws IOException;
 }

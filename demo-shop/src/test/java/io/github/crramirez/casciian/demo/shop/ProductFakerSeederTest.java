@@ -104,7 +104,8 @@ class ProductFakerSeederTest {
 
         final List<Product> created = seeder.seed();
 
-        assertThat(created).allSatisfy(p ->
-                assertThat(p.getPrice().scale()).isEqualTo(2));
+        assertThat(created)
+                .isNotEmpty()
+                .allSatisfy(p -> assertThat(p.getPrice().scale()).isEqualTo(2));
     }
 }

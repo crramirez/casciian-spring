@@ -49,10 +49,12 @@ class AdminTApplicationFormatRowTest {
 
         final String row = AdminTApplication.formatRow(p);
 
-        assertThat(row).contains("$1.00").contains("stock=1");
-        // The SKU column is exactly 14 chars wide, so the very-long SKU is
-        // truncated to that width.
-        assertThat(row).startsWith("SKU-VERY-LONG-");
+        assertThat(row)
+                .contains("$1.00")
+                .contains("stock=1")
+                // The SKU column is exactly 14 chars wide, so the very-long SKU is
+                // truncated to that width.
+                .startsWith("SKU-VERY-LONG-");
     }
 
     @Test
@@ -69,6 +71,7 @@ class AdminTApplicationFormatRowTest {
     }
 
     @Test
+    @SuppressWarnings("java:S125")
     void priceAlwaysRendersWithExactlyTwoDecimals() {
         // BigDecimal scale varies depending on how a value was constructed;
         // the row must normalize so columns align in the TUI.
