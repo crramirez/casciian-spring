@@ -45,6 +45,7 @@ import io.github.crramirez.casciian.demo.shop.ProductRepository;
 public class AdminTApplication extends TApplication {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AdminTApplication.class);
+    private static final String ERROR_TITLE = "Error";
 
     /** Menu id for the "refresh product list" item. */
     static final int MID_PRODUCTS_REFRESH = 9001;
@@ -238,7 +239,7 @@ public class AdminTApplication extends TApplication {
                             "Created \"" + draft.getName() + "\".");
                 } catch (final RuntimeException e) {
                     LOGGER.warn("Failed to create product", e);
-                    messageBox("Error",
+                    messageBox(ERROR_TITLE,
                             "Could not create product:\n" + e.getMessage());
                 }
             }
@@ -261,7 +262,7 @@ public class AdminTApplication extends TApplication {
                             "Updated \"" + target.getName() + "\".");
                 } catch (final RuntimeException e) {
                     LOGGER.warn("Failed to update product {}", target.getId(), e);
-                    messageBox("Error",
+                    messageBox(ERROR_TITLE,
                             "Could not save product:\n" + e.getMessage());
                 }
             }
@@ -285,7 +286,7 @@ public class AdminTApplication extends TApplication {
             refreshList();
         } catch (final RuntimeException e) {
             LOGGER.warn("Failed to delete product {}", target.getId(), e);
-            messageBox("Error", "Could not delete product:\n" + e.getMessage());
+            messageBox(ERROR_TITLE, "Could not delete product:\n" + e.getMessage());
         }
     }
 

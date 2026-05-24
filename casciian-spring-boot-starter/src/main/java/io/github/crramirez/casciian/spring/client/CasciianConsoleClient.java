@@ -23,6 +23,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Tiny in-container client for the Casciian Unix-socket listener.
@@ -69,6 +71,8 @@ public final class CasciianConsoleClient {
 
     /** Argument value that triggers console mode in a host application's main. */
     public static final String CONSOLE_ARGUMENT = "console";
+
+    private static final String STTY_COMMAND = "stty";
 
     private final Path socketPath;
     private final InputStream stdin;
@@ -165,37 +169,29 @@ public final class CasciianConsoleClient {
     private int runSession() {
         try (SocketChannel channel = SocketChannel.open(StandardProtocolFamily.UNIX)) {
             channel.connect(UnixDomainSocketAddress.of(socketPath));
-            final OutputStream rawSocketOut = Channels.newOutputStream(channel);
-            final InputStream socketIn = Channels.newInputStream(channel);
-            // Synchronize all writes to the socket so DATA, RESIZE and INIT
-            // frames never interleave on the wire.
-            final Object writeLock = new Object();
-            final OutputStream socketOut = new BufferedOutputStream(rawSocketOut);
-            sendInit(socketOut, writeLock);
-            final AtomicBoolean stop = new AtomicBoolean(false);
-            final Thread reader = startReader(socketIn, stop);
-            final Thread resizer = startResizer(socketOut, writeLock, stop);
-            try {
-                pumpStdinToSocket(socketOut, writeLock, stop);
-            } finally {
-                // Half-close so the server sees EOF and tears down the TUI.
+            try (InputStream socketIn = Channels.newInputStream(channel);
+                 final OutputStream socketOut = new BufferedOutputStream(Channels.newOutputStream(channel))) {
+                // Serialize all writes to the socket so DATA, RESIZE and INIT
+                // frames never interleave on the wire.
+                final Lock writeLock = new ReentrantLock();
+                sendInit(socketOut, writeLock);
+                final AtomicBoolean stop = new AtomicBoolean(false);
+                final Thread reader = startReader(socketIn, stop);
+                final Thread resizer = startResizer(socketOut, writeLock, stop);
                 try {
-                    channel.shutdownOutput();
-                } catch (IOException ignored) {
-                    // already closed
+                    pumpStdinToSocket(socketOut, writeLock, stop);
+                } finally {
+                    // Half-close so the server sees EOF and tears down the TUI.
+                    shutdownOutput(channel);
+                    // Let the reader drain whatever the server still wants to
+                    // send (e.g. final screen redraw on TUI exit). Bound the
+                    // wait so a misbehaving server cannot hang the client.
+                    awaitReader(reader);
+                    stop.set(true);
+                    resizer.interrupt();
                 }
-                // Let the reader drain whatever the server still wants to
-                // send (e.g. final screen redraw on TUI exit). Bound the
-                // wait so a misbehaving server cannot hang the client.
-                try {
-                    reader.join(TimeUnit.SECONDS.toMillis(5));
-                } catch (InterruptedException ie) {
-                    Thread.currentThread().interrupt();
-                }
-                stop.set(true);
-                resizer.interrupt();
+                return 0;
             }
-            return 0;
         } catch (IOException e) {
             System.err.println("casciian: connection to " + socketPath
                     + " failed: " + e.getMessage());
@@ -203,7 +199,23 @@ public final class CasciianConsoleClient {
         }
     }
 
-    private void sendInit(final OutputStream socketOut, final Object writeLock) throws IOException {
+    private static void shutdownOutput(final SocketChannel channel) {
+        try {
+            channel.shutdownOutput();
+        } catch (IOException ignored) {
+            // Already closed.
+        }
+    }
+
+    private static void awaitReader(final Thread reader) {
+        try {
+            reader.join(TimeUnit.SECONDS.toMillis(5));
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    private void sendInit(final OutputStream socketOut, final Lock writeLock) throws IOException {
         final ByteArrayOutputStream payload = new ByteArrayOutputStream();
         try (DataOutputStream out = new DataOutputStream(payload)) {
             out.writeUTF(currentUsername());
@@ -216,7 +228,7 @@ public final class CasciianConsoleClient {
     }
 
     private void pumpStdinToSocket(final OutputStream socketOut,
-                                   final Object writeLock,
+                                   final Lock writeLock,
                                    final AtomicBoolean stop) throws IOException {
         final byte[] buf = new byte[1024];
         while (!stop.get()) {
@@ -257,7 +269,7 @@ public final class CasciianConsoleClient {
     }
 
     private Thread startResizer(final OutputStream socketOut,
-                                final Object writeLock,
+                                final Lock writeLock,
                                 final AtomicBoolean stop) {
         final Thread t = new Thread(() -> {
             int lastCols = -1;
@@ -283,6 +295,7 @@ public final class CasciianConsoleClient {
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
                     return;
                 }
             }
@@ -293,10 +306,11 @@ public final class CasciianConsoleClient {
     }
 
     private static void writeFrame(final OutputStream out,
-                                   final Object writeLock,
+                                   final Lock writeLock,
                                    final byte type,
                                    final byte[] payload) throws IOException {
-        synchronized (writeLock) {
+        writeLock.lock();
+        try {
             out.write(type);
             // Big-endian length, matching DataInput.readInt() on the server.
             out.write((payload.length >>> 24) & 0xFF);
@@ -305,6 +319,8 @@ public final class CasciianConsoleClient {
             out.write(payload.length & 0xFF);
             out.write(payload);
             out.flush();
+        } finally {
+            writeLock.unlock();
         }
     }
 
@@ -405,7 +421,7 @@ public final class CasciianConsoleClient {
             // command always targets the controlling terminal, even if the
             // calling JVM has its standard streams attached to pipes (as
             // is the case under `docker exec -t`).
-            final StringBuilder cmd = new StringBuilder("stty");
+            final StringBuilder cmd = new StringBuilder(STTY_COMMAND);
             for (final String a : args) {
                 cmd.append(' ').append(shellQuote(a));
             }
@@ -414,16 +430,16 @@ public final class CasciianConsoleClient {
                     .redirectErrorStream(true)
                     .redirectOutput(ProcessBuilder.Redirect.DISCARD)
                     .start();
-            awaitOrFail(p, "stty " + args[0]);
+            awaitOrFail(p, STTY_COMMAND + " " + args[0]);
         }
 
         private static String runSttyForOutput(final String arg) throws IOException {
-            final String cmd = "stty " + shellQuote(arg) + " </dev/tty";
+            final String cmd = STTY_COMMAND + " " + shellQuote(arg) + " </dev/tty";
             final Process p = new ProcessBuilder("sh", "-c", cmd)
                     .redirectErrorStream(true)
                     .start();
             final String output = new String(p.getInputStream().readAllBytes());
-            awaitOrFail(p, "stty " + arg);
+            awaitOrFail(p, STTY_COMMAND + " " + arg);
             return output;
         }
 
