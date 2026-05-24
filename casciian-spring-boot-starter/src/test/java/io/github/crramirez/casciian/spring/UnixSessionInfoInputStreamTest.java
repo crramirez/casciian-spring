@@ -91,10 +91,6 @@ class UnixSessionInfoInputStreamTest {
             // EOF surfaces immediately on the pipe side and the failure is
             // recorded so the server can log it.
             assertThat(in.read()).isEqualTo(-1);
-            // Give the demux thread a beat to record the failure.
-            for (int i = 0; i < 50 && in.getDemuxFailureForTesting() == null; i++) {
-                Thread.sleep(20);
-            }
             assertThat(in.getDemuxFailureForTesting())
                     .isInstanceOf(IOException.class)
                     .hasMessageContaining("out of range");

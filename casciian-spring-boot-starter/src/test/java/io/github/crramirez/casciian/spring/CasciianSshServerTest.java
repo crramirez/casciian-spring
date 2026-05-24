@@ -58,9 +58,10 @@ class CasciianSshServerTest {
 
         final Path resolved = server.resolveHostKeyPath();
 
-        assertThat(resolved).isAbsolute();
-        assertThat(resolved).hasToString(fakeHome.resolve("casciian-test-key/hostkey").toString());
-        assertThat(resolved.getFileName().toString()).isEqualTo("hostkey");
+        assertThat(resolved)
+                .isAbsolute()
+                .hasToString(fakeHome.resolve("casciian-test-key/hostkey").toString());
+        assertThat(resolved.getFileName()).hasToString("hostkey");
         // Parent directory was created as a side-effect, inside the fake home.
         assertThat(resolved.getParent()).exists();
     }

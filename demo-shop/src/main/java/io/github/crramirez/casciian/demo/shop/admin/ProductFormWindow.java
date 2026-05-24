@@ -199,7 +199,7 @@ final class ProductFormWindow extends TWindow {
      */
     @Override
     public void onKeypress(final TKeypressEvent keypress) {
-        if (keypress.equals(TKeypress.kbEsc)) {
+        if (keypress.matchesKey(TKeypress.kbEsc)) {
             cancel();
             return;
         }

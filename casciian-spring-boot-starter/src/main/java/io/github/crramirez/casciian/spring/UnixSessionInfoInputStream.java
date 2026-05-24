@@ -17,6 +17,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import casciian.backend.SessionInfo;
 
@@ -50,9 +52,9 @@ final class UnixSessionInfoInputStream extends InputStream implements SessionInf
 
     private volatile String username;
     private volatile String language = "en_US";
-    private volatile long windowSize;
+    private final AtomicLong windowSize = new AtomicLong();
     private volatile int idleTime = Integer.MAX_VALUE;
-    private volatile IOException demuxFailure;
+    private final AtomicReference<IOException> demuxFailure = new AtomicReference<>();
 
     /**
      * Build a wrapper around an already-handshaked socket input stream.
@@ -80,13 +82,14 @@ final class UnixSessionInfoInputStream extends InputStream implements SessionInf
         this.username = initialUser == null ? "" : initialUser;
         final int w = initialCols > 0 ? initialCols : DEFAULT_WINDOW_WIDTH;
         final int h = initialRows > 0 ? initialRows : DEFAULT_WINDOW_HEIGHT;
-        this.windowSize = pack(w, h);
+        this.windowSize.set(pack(w, h));
         // Generous buffer so a burst of pasted input does not block the
         // demux thread (which would also block out-of-band RESIZE frames).
         this.pipe = new PipedInputStream(64 * 1024);
         this.pipeSink = new PipedOutputStream(pipe);
-        this.demuxThread = Thread.ofVirtual()
+        this.demuxThread = Thread.ofPlatform()
                 .name(threadName == null ? "casciian-unix-demux" : threadName)
+                .daemon(true)
                 .unstarted(() -> demuxLoop(socketInput));
         this.demuxThread.start();
     }
@@ -101,10 +104,8 @@ final class UnixSessionInfoInputStream extends InputStream implements SessionInf
     private void demuxLoop(final InputStream socketInput) {
         try (DataInputStream in = new DataInputStream(socketInput)) {
             while (true) {
-                final int type;
-                try {
-                    type = in.readByte();
-                } catch (EOFException eof) {
+                final int type = readFrameType(in);
+                if (type < 0) {
                     break;
                 }
                 final int length = in.readInt();
@@ -113,11 +114,10 @@ final class UnixSessionInfoInputStream extends InputStream implements SessionInf
                             "Frame payload length " + length + " out of range");
                 }
                 switch (type) {
-                    case CasciianConsoleProtocol.TYPE_DATA -> {
+                    case CasciianConsoleProtocol.TYPE_DATA ->
                         // Stream the payload to the pipe in chunks to avoid
                         // allocating a large buffer for the worst case.
                         copyToPipe(in, length);
-                    }
                     case CasciianConsoleProtocol.TYPE_RESIZE -> {
                         if (length != 8) {
                             throw new IOException(
@@ -127,21 +127,28 @@ final class UnixSessionInfoInputStream extends InputStream implements SessionInf
                         final int rows = in.readInt();
                         setWindowSize(cols, rows);
                     }
-                    default -> {
+                    default ->
                         // Unknown frame type. Skip to keep the stream in
                         // sync rather than silently desyncing.
                         in.skipNBytes(length);
-                    }
                 }
             }
         } catch (IOException e) {
-            this.demuxFailure = e;
+            this.demuxFailure.set(e);
         } finally {
             try {
                 pipeSink.close();
             } catch (IOException ignored) {
                 // Closing is best-effort: the read side will see EOF.
             }
+        }
+    }
+
+    private static int readFrameType(final DataInputStream in) throws IOException {
+        try {
+            return in.readByte();
+        } catch (EOFException eof) {
+            return -1;
         }
     }
 
@@ -162,16 +169,15 @@ final class UnixSessionInfoInputStream extends InputStream implements SessionInf
      * are ignored so a malformed RESIZE frame cannot collapse the screen.
      */
     void setWindowSize(final int columns, final int rows) {
-        synchronized (this) {
-            final long current = this.windowSize;
+        windowSize.updateAndGet(current -> {
             final int newWidth = columns > 0 ? columns : unpackWidth(current);
             final int newHeight = rows > 0 ? rows : unpackHeight(current);
-            this.windowSize = pack(newWidth, newHeight);
-        }
+            return pack(newWidth, newHeight);
+        });
     }
 
     private static long pack(final int width, final int height) {
-        return ((long) width << 32) | ((long) height & 0xFFFFFFFFL);
+        return ((long) width << 32) | (height & 0xFFFFFFFFL);
     }
 
     private static int unpackWidth(final long packed) {
@@ -209,7 +215,7 @@ final class UnixSessionInfoInputStream extends InputStream implements SessionInf
 
     /** Visible for tests: the most recent demux failure, if any. */
     IOException getDemuxFailureForTesting() {
-        return demuxFailure;
+        return demuxFailure.get();
     }
 
     // ------------------------------------------------------------------
@@ -253,12 +259,12 @@ final class UnixSessionInfoInputStream extends InputStream implements SessionInf
 
     @Override
     public int getWindowWidth() {
-        return unpackWidth(windowSize);
+        return unpackWidth(windowSize.get());
     }
 
     @Override
     public int getWindowHeight() {
-        return unpackHeight(windowSize);
+        return unpackHeight(windowSize.get());
     }
 
     /**

@@ -10,9 +10,12 @@
 package io.github.crramirez.casciian.spring;
 
 import java.io.FilterInputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.util.concurrent.atomic.AtomicLong;
 
 import casciian.backend.SessionInfo;
+import org.springframework.lang.NonNull;
 
 /**
  * {@link InputStream} adapter that also implements Casciian's
@@ -53,7 +56,7 @@ final class SshSessionInfoInputStream extends FilterInputStream implements Sessi
      * (new width, old height) on the next idle tick and trigger spurious
      * intermediate resize events.
      */
-    private volatile long windowSize;
+    private final AtomicLong windowSize = new AtomicLong();
 
     private volatile int idleTime = Integer.MAX_VALUE;
 
@@ -78,7 +81,7 @@ final class SshSessionInfoInputStream extends FilterInputStream implements Sessi
         this.username = username == null ? "" : username;
         final int initialWidth = columns > 0 ? columns : DEFAULT_WINDOW_WIDTH;
         final int initialHeight = rows > 0 ? rows : DEFAULT_WINDOW_HEIGHT;
-        this.windowSize = pack(initialWidth, initialHeight);
+        this.windowSize.set(pack(initialWidth, initialHeight));
     }
 
     /**
@@ -95,16 +98,15 @@ final class SshSessionInfoInputStream extends FilterInputStream implements Sessi
      * @param rows    the new PTY height in character cells
      */
     void setWindowSize(final int columns, final int rows) {
-        synchronized (this) {
-            final long current = this.windowSize;
+        windowSize.updateAndGet(current -> {
             final int newWidth = columns > 0 ? columns : unpackWidth(current);
             final int newHeight = rows > 0 ? rows : unpackHeight(current);
-            this.windowSize = pack(newWidth, newHeight);
-        }
+            return pack(newWidth, newHeight);
+        });
     }
 
     private static long pack(final int width, final int height) {
-        return ((long) width << 32) | ((long) height & 0xFFFFFFFFL);
+        return ((long) width << 32) | (height & 0xFFFFFFFFL);
     }
 
     private static int unpackWidth(final long packed) {
@@ -118,6 +120,12 @@ final class SshSessionInfoInputStream extends FilterInputStream implements Sessi
     // ------------------------------------------------------------------
     // SessionInfo
     // ------------------------------------------------------------------
+
+    @Override
+    @SuppressWarnings("java:S1185")
+    public int read(@NonNull final byte[] b, final int off, final int len) throws IOException {
+        return super.read(b, off, len);
+    }
 
     @Override
     public long getStartTime() {
@@ -156,12 +164,12 @@ final class SshSessionInfoInputStream extends FilterInputStream implements Sessi
 
     @Override
     public int getWindowWidth() {
-        return unpackWidth(windowSize);
+        return unpackWidth(windowSize.get());
     }
 
     @Override
     public int getWindowHeight() {
-        return unpackHeight(windowSize);
+        return unpackHeight(windowSize.get());
     }
 
     /**
