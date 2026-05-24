@@ -177,20 +177,17 @@ public final class CasciianConsoleClient {
                 final int[] initSize = sendInit(socketOut, writeLock);
                 final AtomicBoolean stop = new AtomicBoolean(false);
                 final Thread reader = startReader(socketIn, stop);
+                final Thread writer = startWriter(socketOut, writeLock, stop, channel);
                 final Thread resizer = startResizer(socketOut, writeLock, stop,
                         initSize[0], initSize[1]);
-                try {
-                    pumpStdinToSocket(socketOut, writeLock, stop);
-                } finally {
-                    // Half-close so the server sees EOF and tears down the TUI.
-                    shutdownOutput(channel);
-                    // Let the reader drain whatever the server still wants to
-                    // send (e.g. final screen redraw on TUI exit). Bound the
-                    // wait so a misbehaving server cannot hang the client.
-                    awaitReader(reader);
-                    stop.set(true);
-                    resizer.interrupt();
-                }
+                // Block until the reader detects server EOF.
+                awaitThread(reader);
+                stop.set(true);
+                // Closing the channel unblocks the writer if it is stuck in
+                // stdin.read() (the write side throws on the next flush).
+                shutdownOutput(channel);
+                awaitThread(writer);
+                resizer.interrupt();
                 return 0;
             }
         } catch (IOException e) {
@@ -208,9 +205,9 @@ public final class CasciianConsoleClient {
         }
     }
 
-    private static void awaitReader(final Thread reader) {
+    private static void awaitThread(final Thread t) {
         try {
-            reader.join(TimeUnit.SECONDS.toMillis(5));
+            t.join(TimeUnit.SECONDS.toMillis(5));
         } catch (InterruptedException ie) {
             Thread.currentThread().interrupt();
         }
@@ -229,35 +226,35 @@ public final class CasciianConsoleClient {
         return size;
     }
 
-    private void pumpStdinToSocket(final OutputStream socketOut,
-                                   final Lock writeLock,
-                                   final AtomicBoolean stop) throws IOException {
-        final byte[] buf = new byte[1024];
-        while (!stop.get()) {
-            // Poll available() so we can check the stop flag periodically.
-            // This allows the client to exit promptly when the server closes
-            // the connection, rather than blocking until the user presses a key.
-            if (stdin.available() <= 0) {
-                try {
-                    //noinspection BusyWait
-                    Thread.sleep(50);
-                } catch (InterruptedException ie) {
-                    Thread.currentThread().interrupt();
-                    return;
+    private Thread startWriter(final OutputStream socketOut,
+                               final Lock writeLock,
+                               final AtomicBoolean stop,
+                               final SocketChannel channel) {
+        final Thread t = new Thread(() -> {
+            final byte[] buf = new byte[1024];
+            try {
+                while (!stop.get()) {
+                    final int n = stdin.read(buf);
+                    if (n < 0) {
+                        break;
+                    }
+                    if (n == 0) {
+                        continue;
+                    }
+                    final byte[] frame = new byte[n];
+                    System.arraycopy(buf, 0, frame, 0, n);
+                    writeFrame(socketOut, writeLock, CasciianConsoleProtocol.TYPE_DATA, frame);
                 }
-                continue;
+            } catch (IOException ignored) {
+                // Socket closed by reader or server disconnect.
+            } finally {
+                // If stdin closed (user Ctrl-D), half-close so server sees EOF.
+                shutdownOutput(channel);
             }
-            final int n = stdin.read(buf);
-            if (n < 0) {
-                return;
-            }
-            if (n == 0) {
-                continue;
-            }
-            final byte[] frame = new byte[n];
-            System.arraycopy(buf, 0, frame, 0, n);
-            writeFrame(socketOut, writeLock, CasciianConsoleProtocol.TYPE_DATA, frame);
-        }
+        }, "casciian-console-writer");
+        t.setDaemon(true);
+        t.start();
+        return t;
     }
 
     private Thread startReader(final InputStream socketIn, final AtomicBoolean stop) {
