@@ -28,11 +28,10 @@ package io.github.crramirez.casciian.spring.client;
  *       size.</li>
  * </ul>
  *
- * <p>The <em>server&nbsp;&rarr;&nbsp;client</em> direction is mostly unframed:
- * it is the raw output of Casciian's ECMA48 backend, which the client copies
- * verbatim to its standard output. The single exception is
- * {@link #TYPE_CLOSE}, sent by the server after the TUI exits to signal the
- * client that the session is over.</p>
+ * <p>The <em>server&nbsp;&rarr;&nbsp;client</em> direction is unframed: it
+ * is the raw output of Casciian's ECMA48 backend, which the client copies
+ * verbatim to its standard output. This keeps the protocol trivial and
+ * avoids buffering the rendered screen.</p>
  *
  * <p>Each client-to-server frame has the layout:</p>
  * <pre>
@@ -65,16 +64,6 @@ public final class CasciianConsoleProtocol {
 
     /** A window-resize notification (new columns / rows). */
     public static final byte TYPE_RESIZE = 3;
-
-    /**
-     * Server→client close notification. Sent by the server after the
-     * {@code TApplication} exits, immediately before closing the socket.
-     * The client uses this as an early signal to tear down the session
-     * without waiting for the user to press a key.
-     *
-     * <p>Frame layout: {@code [TYPE_CLOSE (1 byte)][length=0 (4 bytes)]}.</p>
-     */
-    public static final byte TYPE_CLOSE = 4;
 
     /** Maximum accepted payload length per frame, to bound memory use. */
     public static final int MAX_PAYLOAD_LENGTH = 64 * 1024;
