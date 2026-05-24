@@ -83,8 +83,9 @@ class CasciianShellFactoryTest {
         // SshSessionInfoInputStream so Casciian's ECMA48 backend can read
         // the PTY size as a SessionInfo. The wrapper must still delegate
         // reads to the original SSH stream.
-        assertThat(factory.lastInput).isInstanceOf(SessionInfo.class);
-        assertThat(factory.lastInput).isNotSameAs(in);
+        assertThat(factory.lastInput)
+                .isInstanceOf(SessionInfo.class)
+                .isNotSameAs(in);
         final SessionInfo sessionInfo = (SessionInfo) factory.lastInput;
         assertThat(sessionInfo.getWindowWidth()).isEqualTo(120);
         assertThat(sessionInfo.getWindowHeight()).isEqualTo(40);

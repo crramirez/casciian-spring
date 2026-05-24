@@ -180,10 +180,7 @@ public class CasciianShellFactory implements ShellFactory {
                             "CasciianTApplicationFactory returned null");
                 }
                 created.run();
-            } catch (InterruptedException ie) {
-                Thread.currentThread().interrupt();
-                exitCode = 130; // conventional 128 + SIGINT
-            } catch (Exception e) {
+            } catch (IOException | RuntimeException e) {
                 LOG.warn("Casciian SSH session for user '{}' terminated with error",
                         context.username(), e);
                 exitCode = 1;

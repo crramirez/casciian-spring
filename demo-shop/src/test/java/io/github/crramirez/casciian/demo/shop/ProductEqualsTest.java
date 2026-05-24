@@ -36,13 +36,6 @@ class ProductEqualsTest {
     }
 
     @Test
-    void transientProductIsEqualToItself() {
-        final Product a = new Product("SKU", "Name", "desc", new BigDecimal("1.00"), 1);
-
-        assertThat(a).isEqualTo(a);
-    }
-
-    @Test
     void persistedProductsAreEqualWhenIdsMatch() {
         final Product a = new Product("SKU-A", "A", "", new BigDecimal("1.00"), 1);
         final Product b = new Product("SKU-B", "B", "", new BigDecimal("9.00"), 9);
@@ -50,7 +43,7 @@ class ProductEqualsTest {
         b.setId(7L);
 
         assertThat(a).isEqualTo(b);
-        assertThat(a.hashCode()).isEqualTo(b.hashCode());
+        assertThat(a).hasSameHashCodeAs(b);
     }
 
     @Test

@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.password.PasswordAuthenticator;
@@ -36,7 +37,7 @@ public class CasciianSshServer implements SmartLifecycle {
     private final ShellFactory shellFactory;
     private final PasswordAuthenticator passwordAuthenticator;
 
-    private volatile SshServer sshServer;
+    private final AtomicReference<SshServer> sshServer = new AtomicReference<>();
     private volatile boolean running;
 
     public CasciianSshServer(final CasciianSshProperties properties,
@@ -72,7 +73,7 @@ public class CasciianSshServer implements SmartLifecycle {
                     "Failed to start Casciian SSH server on "
                             + properties.getHost() + ":" + properties.getPort(), e);
         }
-        sshServer = server;
+        sshServer.set(server);
         running = true;
         LOG.info("Casciian SSH server listening on {}:{}",
                 properties.getHost(), properties.getPort());
@@ -83,7 +84,7 @@ public class CasciianSshServer implements SmartLifecycle {
         if (!running) {
             return;
         }
-        final SshServer server = sshServer;
+        final SshServer server = sshServer.get();
         if (server != null) {
             try {
                 server.stop(true);
@@ -91,7 +92,7 @@ public class CasciianSshServer implements SmartLifecycle {
                 LOG.warn("Error stopping Casciian SSH server", e);
             }
         }
-        sshServer = null;
+        sshServer.set(null);
         running = false;
         LOG.info("Casciian SSH server stopped");
     }
@@ -147,6 +148,6 @@ public class CasciianSshServer implements SmartLifecycle {
 
     /** Package-private accessor for tests. */
     SshServer getSshServerForTesting() {
-        return sshServer;
+        return sshServer.get();
     }
 }

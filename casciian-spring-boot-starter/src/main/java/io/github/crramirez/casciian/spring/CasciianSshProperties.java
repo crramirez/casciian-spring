@@ -24,6 +24,7 @@ public class CasciianSshProperties {
     public static final int DEFAULT_PORT = 2222;
 
     /** Default listen address (loopback only, for safety). */
+    @SuppressWarnings("java:S1075")
     public static final String DEFAULT_HOST = "127.0.0.1";
 
     /** Default location of the persisted SSH host key, relative to the user home. */

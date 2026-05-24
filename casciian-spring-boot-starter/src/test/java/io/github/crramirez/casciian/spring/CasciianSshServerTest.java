@@ -59,7 +59,7 @@ class CasciianSshServerTest {
         final Path resolved = server.resolveHostKeyPath();
 
         assertThat(resolved).isAbsolute();
-        assertThat(resolved.toString()).startsWith(fakeHome.toString());
+        assertThat(resolved).hasToString(fakeHome.resolve("casciian-test-key/hostkey").toString());
         assertThat(resolved.getFileName().toString()).isEqualTo("hostkey");
         // Parent directory was created as a side-effect, inside the fake home.
         assertThat(resolved.getParent()).exists();
@@ -86,7 +86,8 @@ class CasciianSshServerTest {
 
         final Path resolved = server.resolveHostKeyPath();
 
-        assertThat(resolved.toString()).startsWith(fakeHome.toString());
+        assertThat(resolved).hasToString(
+                fakeHome.resolve(".casciian/ssh_host_key").toString());
     }
 
     @Test
@@ -110,6 +111,7 @@ class CasciianSshServerTest {
 
         // A blank value must not resolve to the working directory; it should
         // behave like null and fall back to the documented default under home.
-        assertThat(resolved.toString()).startsWith(fakeHome.toString());
+        assertThat(resolved).hasToString(
+                fakeHome.resolve(".casciian/ssh_host_key").toString());
     }
 }

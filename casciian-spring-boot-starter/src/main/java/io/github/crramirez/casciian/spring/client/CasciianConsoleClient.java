@@ -169,8 +169,8 @@ public final class CasciianConsoleClient {
     private int runSession() {
         try (SocketChannel channel = SocketChannel.open(StandardProtocolFamily.UNIX)) {
             channel.connect(UnixDomainSocketAddress.of(socketPath));
-            try (InputStream socketIn = Channels.newInputStream(channel);
-                 final OutputStream socketOut = new BufferedOutputStream(Channels.newOutputStream(channel))) {
+            try (InputStream socketIn = Channels.newInputStream(channel)) {
+                final OutputStream socketOut = new BufferedOutputStream(Channels.newOutputStream(channel));
                 // Serialize all writes to the socket so DATA, RESIZE and INIT
                 // frames never interleave on the wire.
                 final Lock writeLock = new ReentrantLock();

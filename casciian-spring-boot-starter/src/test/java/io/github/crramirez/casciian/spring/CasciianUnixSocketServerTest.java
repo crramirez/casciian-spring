@@ -36,6 +36,7 @@ import casciian.backend.SessionInfo;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -190,25 +191,25 @@ class CasciianUnixSocketServerTest {
 
         final CountDownLatch resized = new CountDownLatch(1);
         final AtomicReference<SessionInfo> sessionInfo = new AtomicReference<>();
+        final AtomicReference<Throwable> runFailure = new AtomicReference<>();
 
         final CasciianTApplicationFactory factory = (in, out, session) -> {
             sessionInfo.set((SessionInfo) in);
-            // Keep the session open until the test fires the resize signal
-            // and we observe the new size on the SessionInfo.
-            new Thread(() -> {
+            final TApplication app = mock(TApplication.class);
+            doAnswer(invocation -> {
                 try {
-                    for (int i = 0; i < 200; i++) {
-                        if (((SessionInfo) in).getWindowWidth() == 200) {
-                            resized.countDown();
-                            return;
-                        }
-                        Thread.sleep(20);
+                    final int marker = in.read();
+                    if (marker != 'x') {
+                        runFailure.set(new AssertionError("Expected marker byte after resize"));
                     }
-                } catch (InterruptedException ignored) {
-                    // ignored
+                } catch (Throwable t) {
+                    runFailure.set(t);
+                } finally {
+                    resized.countDown();
                 }
-            }, "size-watcher").start();
-            return mock(TApplication.class);
+                return null;
+            }).when(app).run();
+            return app;
         };
 
         final CasciianUnixSocketServer server = new CasciianUnixSocketServer(props, factory);
@@ -232,8 +233,10 @@ class CasciianUnixSocketServerTest {
                 dout.writeInt(60);
             }
             writeFrame(out, CasciianConsoleProtocol.TYPE_RESIZE, rp.toByteArray());
+            writeFrame(out, CasciianConsoleProtocol.TYPE_DATA, new byte[] { 'x' });
 
             assertThat(resized.await(3, TimeUnit.SECONDS)).isTrue();
+            assertThat(runFailure.get()).isNull();
             assertThat(sessionInfo.get().getWindowWidth()).isEqualTo(200);
             assertThat(sessionInfo.get().getWindowHeight()).isEqualTo(60);
         } finally {

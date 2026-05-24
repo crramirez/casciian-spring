@@ -28,6 +28,7 @@ import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.slf4j.Logger;
@@ -59,10 +60,9 @@ public class CasciianUnixSocketServer implements SmartLifecycle {
     private final CasciianTApplicationFactory applicationFactory;
 
     private final AtomicLong sessionCounter = new AtomicLong();
+    private final AtomicReference<ServerSocketChannel> serverChannel = new AtomicReference<>();
+    private final AtomicReference<Path> socketPath = new AtomicReference<>();
 
-    private volatile ServerSocketChannel serverChannel;
-    private volatile Thread acceptThread;
-    private volatile Path socketPath;
     private volatile boolean running;
 
     public CasciianUnixSocketServer(final CasciianUnixSocketProperties properties,
@@ -94,8 +94,8 @@ public class CasciianUnixSocketServer implements SmartLifecycle {
             final ServerSocketChannel channel = ServerSocketChannel.open(StandardProtocolFamily.UNIX);
             channel.bind(UnixDomainSocketAddress.of(path));
             applyPermissions(path);
-            serverChannel = channel;
-            socketPath = path;
+            serverChannel.set(channel);
+            socketPath.set(path);
         } catch (IOException e) {
             throw new IllegalStateException(
                     "Failed to bind Casciian Unix-socket listener at " + path, e);
@@ -104,14 +104,13 @@ public class CasciianUnixSocketServer implements SmartLifecycle {
                 .name("casciian-unix-accept")
                 .daemon(true)
                 .unstarted(this::acceptLoop);
-        acceptThread = t;
         running = true;
         t.start();
         LOG.info("Casciian Unix-socket listener bound at {}", path);
     }
 
     private void acceptLoop() {
-        final ServerSocketChannel channel = serverChannel;
+        final ServerSocketChannel channel = serverChannel.get();
         while (running && channel != null && channel.isOpen()) {
             final SocketChannel client;
             try {
@@ -139,35 +138,36 @@ public class CasciianUnixSocketServer implements SmartLifecycle {
      */
     void handleClient(final SocketChannel client, final long sessionId) {
         try (SocketChannel c = client) {
-            final InputStream rawIn = Channels.newInputStream(c);
-            final OutputStream rawOut = new BufferedOutputStream(Channels.newOutputStream(c));
-            final DataInputStream din = new DataInputStream(rawIn);
-            // First frame must be INIT.
-            final int type = din.readByte();
-            final int length = din.readInt();
-            if (type != CasciianConsoleProtocol.TYPE_INIT) {
-                throw new IOException("Expected INIT frame, got type=" + type);
-            }
-            if (length < 0 || length > CasciianConsoleProtocol.MAX_PAYLOAD_LENGTH) {
-                throw new IOException("INIT frame length " + length + " out of range");
-            }
-            final byte[] payload = new byte[length];
-            din.readFully(payload);
-            final InitFrame init = InitFrame.decode(payload);
-            final String remote = "unix:" + (socketPath == null ? "?" : socketPath);
-            final SshSessionContext context = new SshSessionContext(
-                    init.username(), remote, init.terminalType(), init.columns(), init.rows());
-            try (UnixSessionInfoInputStream demuxedInput = new UnixSessionInfoInputStream(
-                    rawIn, init.username(), init.columns(), init.rows(),
-                    "casciian-unix-demux-" + sessionId)) {
-                runApplication(demuxedInput, rawOut, context);
-                final IOException demuxFailure = demuxedInput.getDemuxFailureForTesting();
-                if (demuxFailure != null) {
-                    LOG.warn("Casciian Unix-socket session {} demux failed",
-                            sessionId, demuxFailure);
+            try (DataInputStream din = new DataInputStream(Channels.newInputStream(c));
+                 OutputStream rawOut = new BufferedOutputStream(Channels.newOutputStream(c))) {
+                // First frame must be INIT.
+                final int type = din.readByte();
+                final int length = din.readInt();
+                if (type != CasciianConsoleProtocol.TYPE_INIT) {
+                    throw new IOException("Expected INIT frame, got type=" + type);
                 }
-            } finally {
-                rawOut.flush();
+                if (length < 0 || length > CasciianConsoleProtocol.MAX_PAYLOAD_LENGTH) {
+                    throw new IOException("INIT frame length " + length + " out of range");
+                }
+                final byte[] payload = new byte[length];
+                din.readFully(payload);
+                final InitFrame init = InitFrame.decode(payload);
+                final Path path = socketPath.get();
+                final String remote = "unix:" + (path == null ? "?" : path);
+                final SshSessionContext context = new SshSessionContext(
+                        init.username(), remote, init.terminalType(), init.columns(), init.rows());
+                try (UnixSessionInfoInputStream demuxedInput = new UnixSessionInfoInputStream(
+                        din, init.username(), init.columns(), init.rows(),
+                        "casciian-unix-demux-" + sessionId)) {
+                    runApplication(demuxedInput, rawOut, context);
+                    final IOException demuxFailure = demuxedInput.getDemuxFailureForTesting();
+                    if (demuxFailure != null) {
+                        LOG.warn("Casciian Unix-socket session {} demux failed",
+                                sessionId, demuxFailure);
+                    }
+                } finally {
+                    rawOut.flush();
+                }
             }
         } catch (IOException e) {
             LOG.warn("Casciian Unix-socket session {} terminated with I/O error", sessionId, e);
@@ -184,9 +184,7 @@ public class CasciianUnixSocketServer implements SmartLifecycle {
                         "CasciianTApplicationFactory returned null");
             }
             application.run();
-        } catch (InterruptedException ie) {
-            Thread.currentThread().interrupt();
-        } catch (Exception e) {
+        } catch (IOException | RuntimeException e) {
             LOG.warn("Casciian Unix-socket session for user '{}' failed",
                     context.username(), e);
         }
@@ -198,7 +196,7 @@ public class CasciianUnixSocketServer implements SmartLifecycle {
             return;
         }
         running = false;
-        final ServerSocketChannel channel = serverChannel;
+        final ServerSocketChannel channel = serverChannel.get();
         if (channel != null) {
             try {
                 channel.close();
@@ -206,7 +204,7 @@ public class CasciianUnixSocketServer implements SmartLifecycle {
                 LOG.warn("Error closing Casciian Unix-socket channel", e);
             }
         }
-        final Path path = socketPath;
+        final Path path = socketPath.get();
         if (path != null) {
             try {
                 Files.deleteIfExists(path);
@@ -214,9 +212,8 @@ public class CasciianUnixSocketServer implements SmartLifecycle {
                 LOG.warn("Error deleting Casciian Unix socket file {}", path, e);
             }
         }
-        serverChannel = null;
-        socketPath = null;
-        acceptThread = null;
+        serverChannel.set(null);
+        socketPath.set(null);
         LOG.info("Casciian Unix-socket listener stopped");
     }
 
@@ -304,7 +301,7 @@ public class CasciianUnixSocketServer implements SmartLifecycle {
 
     /** Package-private accessor for tests. */
     Path getSocketPathForTesting() {
-        return socketPath;
+        return socketPath.get();
     }
 
     /**
