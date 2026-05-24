@@ -44,7 +44,7 @@ class ProductEqualsTest {
 
         assertThat(a)
                 .isEqualTo(b)
-            .hasSameHashCodeAs(b);
+                .hasSameHashCodeAs(b);
     }
 
     @Test
