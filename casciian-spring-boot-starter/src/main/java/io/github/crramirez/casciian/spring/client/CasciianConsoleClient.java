@@ -174,11 +174,10 @@ public final class CasciianConsoleClient {
                 // Serialize all writes to the socket so DATA, RESIZE and INIT
                 // frames never interleave on the wire.
                 final Lock writeLock = new ReentrantLock();
-                final int[] initSize = sendInit(socketOut, writeLock);
+                sendInit(socketOut, writeLock);
                 final AtomicBoolean stop = new AtomicBoolean(false);
                 final Thread reader = startReader(socketIn, stop);
-                final Thread resizer = startResizer(socketOut, writeLock, stop,
-                        initSize[0], initSize[1]);
+                final Thread resizer = startResizer(socketOut, writeLock, stop);
                 try {
                     pumpStdinToSocket(socketOut, writeLock, stop);
                 } finally {
@@ -216,17 +215,16 @@ public final class CasciianConsoleClient {
         }
     }
 
-    private int[] sendInit(final OutputStream socketOut, final Lock writeLock) throws IOException {
+    private void sendInit(final OutputStream socketOut, final Lock writeLock) throws IOException {
         final ByteArrayOutputStream payload = new ByteArrayOutputStream();
-        final int[] size = stty.querySize();
         try (DataOutputStream out = new DataOutputStream(payload)) {
             out.writeUTF(currentUsername());
             out.writeUTF(currentTermType());
+            final int[] size = stty.querySize();
             out.writeInt(size[0]);
             out.writeInt(size[1]);
         }
         writeFrame(socketOut, writeLock, CasciianConsoleProtocol.TYPE_INIT, payload.toByteArray());
-        return size;
     }
 
     private void pumpStdinToSocket(final OutputStream socketOut,
@@ -234,19 +232,6 @@ public final class CasciianConsoleClient {
                                    final AtomicBoolean stop) throws IOException {
         final byte[] buf = new byte[1024];
         while (!stop.get()) {
-            // Poll available() so we can check the stop flag periodically.
-            // This allows the client to exit promptly when the server closes
-            // the connection, rather than blocking until the user presses a key.
-            if (stdin.available() <= 0) {
-                try {
-                    //noinspection BusyWait
-                    Thread.sleep(50);
-                } catch (InterruptedException ie) {
-                    Thread.currentThread().interrupt();
-                    return;
-                }
-                continue;
-            }
             final int n = stdin.read(buf);
             if (n < 0) {
                 return;
@@ -285,12 +270,10 @@ public final class CasciianConsoleClient {
 
     private Thread startResizer(final OutputStream socketOut,
                                 final Lock writeLock,
-                                final AtomicBoolean stop,
-                                final int initialCols,
-                                final int initialRows) {
+                                final AtomicBoolean stop) {
         final Thread t = new Thread(() -> {
-            int lastCols = initialCols;
-            int lastRows = initialRows;
+            int lastCols = -1;
+            int lastRows = -1;
             while (!stop.get()) {
                 try {
                     final int[] size = stty.querySize();
