@@ -42,8 +42,9 @@ class ProductEqualsTest {
         a.setId(7L);
         b.setId(7L);
 
-        assertThat(a).isEqualTo(b);
-        assertThat(a).hasSameHashCodeAs(b);
+        assertThat(a)
+                .isEqualTo(b)
+            .hasSameHashCodeAs(b);
     }
 
     @Test
