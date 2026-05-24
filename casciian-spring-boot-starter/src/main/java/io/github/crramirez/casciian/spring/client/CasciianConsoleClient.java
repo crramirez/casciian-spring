@@ -132,13 +132,14 @@ public final class CasciianConsoleClient {
             System.err.println("casciian: could not snapshot terminal: " + e.getMessage());
             return 2;
         }
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+        final Thread shutdownHook = new Thread(() -> {
             try {
                 stty.restore(saved);
             } catch (IOException ignored) {
                 // Best effort: the user's shell will fix things up.
             }
-        }, "casciian-console-cleanup"));
+        }, "casciian-console-cleanup");
+        Runtime.getRuntime().addShutdownHook(shutdownHook);
         try {
             stty.enterRawMode();
         } catch (IOException e) {
@@ -152,6 +153,11 @@ public final class CasciianConsoleClient {
                 stty.restore(saved);
             } catch (IOException e) {
                 System.err.println("casciian: could not restore terminal: " + e.getMessage());
+            }
+            try {
+                Runtime.getRuntime().removeShutdownHook(shutdownHook);
+            } catch (IllegalStateException ignored) {
+                // JVM is already shutting down; hook removal is not possible.
             }
         }
     }

@@ -10,7 +10,7 @@
 package io.github.crramirez.casciian.spring.client;
 
 /**
- * Wire protocol shared by {@link CasciianUnixSocketServer} and
+ * Wire protocol shared by {@link io.github.crramirez.casciian.spring.CasciianUnixSocketServer} and
  * {@link CasciianConsoleClient}.
  *
  * <p>The Unix-socket channel between the in-container console client and the

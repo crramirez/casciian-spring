@@ -161,6 +161,13 @@ public class CasciianUnixSocketServer implements SmartLifecycle {
                     rawIn, init.username(), init.columns(), init.rows(),
                     "casciian-unix-demux-" + sessionId)) {
                 runApplication(demuxedInput, rawOut, context);
+                final IOException demuxFailure = demuxedInput.getDemuxFailureForTesting();
+                if (demuxFailure != null) {
+                    LOG.warn("Casciian Unix-socket session {} demux failed",
+                            sessionId, demuxFailure);
+                }
+            } finally {
+                rawOut.flush();
             }
         } catch (IOException e) {
             LOG.warn("Casciian Unix-socket session {} terminated with I/O error", sessionId, e);
