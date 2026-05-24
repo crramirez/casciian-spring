@@ -254,6 +254,20 @@ public final class CasciianConsoleClient {
                     if (n < 0) {
                         break;
                     }
+                    // Check if the last 5 bytes are the CLOSE frame.
+                    // The server sends it after TUI output ends, so it is
+                    // the final payload before EOF.
+                    if (n >= 5
+                            && buf[n - 5] == CasciianConsoleProtocol.TYPE_CLOSE
+                            && buf[n - 4] == 0 && buf[n - 3] == 0
+                            && buf[n - 2] == 0 && buf[n - 1] == 0) {
+                        // Write everything except the close frame to stdout.
+                        if (n > 5) {
+                            stdout.write(buf, 0, n - 5);
+                            stdout.flush();
+                        }
+                        break;
+                    }
                     stdout.write(buf, 0, n);
                     stdout.flush();
                 }
@@ -261,6 +275,12 @@ public final class CasciianConsoleClient {
                 // Closed: end the session.
             } finally {
                 stop.set(true);
+                // Close stdin to unblock the pump thread waiting on read().
+                try {
+                    stdin.close();
+                } catch (IOException ignored) {
+                    // Best effort.
+                }
             }
         }, "casciian-console-reader");
         t.setDaemon(true);

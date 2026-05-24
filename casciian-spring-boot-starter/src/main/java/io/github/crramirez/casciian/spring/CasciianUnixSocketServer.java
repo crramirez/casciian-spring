@@ -166,6 +166,8 @@ public class CasciianUnixSocketServer implements SmartLifecycle {
                                 sessionId, demuxFailure);
                     }
                 } finally {
+                    // Send close frame so the client can tear down immediately.
+                    sendCloseFrame(rawOut);
                     rawOut.flush();
                 }
             }
@@ -187,6 +189,22 @@ public class CasciianUnixSocketServer implements SmartLifecycle {
         } catch (IOException | RuntimeException e) {
             LOG.warn("Casciian Unix-socket session for user '{}' failed",
                     context.username(), e);
+        }
+    }
+
+    /**
+     * Write a TYPE_CLOSE frame to signal the client that the session is over.
+     */
+    private static void sendCloseFrame(final OutputStream out) {
+        try {
+            out.write(CasciianConsoleProtocol.TYPE_CLOSE);
+            // Zero-length payload (4 bytes big-endian).
+            out.write(0);
+            out.write(0);
+            out.write(0);
+            out.write(0);
+        } catch (IOException ignored) {
+            // Client may have already disconnected.
         }
     }
 
