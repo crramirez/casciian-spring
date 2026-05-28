@@ -1,2 +1,2 @@
-io.github.crramirez.casciian.spring.CasciianSshAutoConfiguration
-io.github.crramirez.casciian.spring.CasciianUnixSocketAutoConfiguration
+io.github.crramirez.casciian.spring.ssh.CasciianSshAutoConfiguration
+io.github.crramirez.casciian.spring.unix.CasciianUnixSocketAutoConfiguration

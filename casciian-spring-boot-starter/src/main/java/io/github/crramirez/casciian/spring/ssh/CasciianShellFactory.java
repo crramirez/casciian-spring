@@ -7,13 +7,16 @@
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
-package io.github.crramirez.casciian.spring;
+package io.github.crramirez.casciian.spring.ssh;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
+
+import io.github.crramirez.casciian.spring.CasciianTApplicationFactory;
+import io.github.crramirez.casciian.spring.SshSessionContext;
 
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;

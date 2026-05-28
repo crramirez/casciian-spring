@@ -7,7 +7,7 @@
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
-package io.github.crramirez.casciian.spring;
+package io.github.crramirez.casciian.spring.unix;
 
 import io.github.crramirez.casciian.spring.client.CasciianConsoleProtocol;
 
@@ -34,7 +34,7 @@ import org.springframework.lang.NonNull;
  * size — which the backend polls once per second to emit
  * {@code TResizeEvent}s.</p>
  *
- * <p>Just like {@link SshSessionInfoInputStream}, width and height are
+ * <p>Just like {@link io.github.crramirez.casciian.spring.ssh.SshSessionInfoInputStream}, width and height are
  * packed into a single {@code volatile long} so concurrent readers always
  * see a consistent (width, height) pair.</p>
  */

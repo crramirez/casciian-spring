@@ -7,7 +7,10 @@
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
-package io.github.crramirez.casciian.spring;
+package io.github.crramirez.casciian.spring.unix;
+
+import io.github.crramirez.casciian.spring.CasciianTApplicationFactory;
+import io.github.crramirez.casciian.spring.SshSessionContext;
 
 import io.github.crramirez.casciian.spring.client.CasciianConsoleProtocol;
 
