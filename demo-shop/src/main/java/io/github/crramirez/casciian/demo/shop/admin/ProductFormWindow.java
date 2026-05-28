@@ -78,32 +78,32 @@ final class ProductFormWindow extends TWindow {
 
         int row = 1;
 
-        addLabel("SKU:", 2, row);
-        skuField = addField(FIELD_COLUMN, row++, FIELD_WIDTH, false,
-                target.getSku() == null ? "" : target.getSku(),
-                submitAction, null);
+        skuField = addLabelFor("&SKU:", 2, row,
+                addField(FIELD_COLUMN, row++, FIELD_WIDTH, false,
+                        target.getSku() == null ? "" : target.getSku(),
+                        submitAction, null));
 
-        addLabel("Name:", 2, row);
-        nameField = addField(FIELD_COLUMN, row++, FIELD_WIDTH, false,
-                target.getName() == null ? "" : target.getName(),
-                submitAction, null);
+        nameField = addLabelFor("&Name:", 2, row,
+                addField(FIELD_COLUMN, row++, FIELD_WIDTH, false,
+                        target.getName() == null ? "" : target.getName(),
+                        submitAction, null));
 
-        addLabel("Description:", 2, row);
-        descriptionField = addField(FIELD_COLUMN, row++, FIELD_WIDTH, false,
-                target.getDescription() == null ? "" : target.getDescription(),
-                submitAction, null);
+        descriptionField = addLabelFor("&Description:", 2, row,
+                addField(FIELD_COLUMN, row++, FIELD_WIDTH, false,
+                        target.getDescription() == null
+                                ? "" : target.getDescription(),
+                        submitAction, null));
 
-        addLabel("Price:", 2, row);
-        priceField = addField(FIELD_COLUMN, row++, 12, false,
-                target.getPrice() == null
-                        ? "0.00" : target.getPrice().toPlainString(),
-                submitAction, null);
+        priceField = addLabelFor("&Price:", 2, row,
+                addField(FIELD_COLUMN, row++, 12, false,
+                        target.getPrice() == null
+                                ? "0.00" : target.getPrice().toPlainString(),
+                        submitAction, null));
 
-        addLabel("Stock:", 2, row);
-        //noinspection UnusedAssignment
-        stockField = addField(FIELD_COLUMN, row++, 8, false,
-                Integer.toString(target.getStock()),
-                submitAction, null);
+        stockField = addLabelFor("S&tock:", 2, row,
+                addField(FIELD_COLUMN, row++, 8, false,
+                        Integer.toString(target.getStock()),
+                        submitAction, null));
 
         // Buttons
         final int buttonRow = getHeight() - 4;
