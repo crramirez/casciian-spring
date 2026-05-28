@@ -100,7 +100,6 @@ final class ProductFormWindow extends TWindow {
                                 ? "0.00" : target.getPrice().toPlainString(),
                         submitAction, null));
 
-        //noinspection UnusedAssignment
         stockField = addLabelFor("S&tock:", 2, row,
                 addField(FIELD_COLUMN, row++, 8, false,
                         Integer.toString(target.getStock()),
