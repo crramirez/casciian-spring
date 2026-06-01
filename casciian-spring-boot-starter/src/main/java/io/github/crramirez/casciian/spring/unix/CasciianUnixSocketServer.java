@@ -7,8 +7,10 @@
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
-package io.github.crramirez.casciian.spring;
+package io.github.crramirez.casciian.spring.unix;
 
+import io.github.crramirez.casciian.spring.CasciianTApplicationFactory;
+import io.github.crramirez.casciian.spring.SshSessionContext;
 import io.github.crramirez.casciian.spring.client.CasciianConsoleProtocol;
 
 import java.io.BufferedOutputStream;
@@ -41,7 +43,7 @@ import casciian.TApplication;
  * Spring {@link SmartLifecycle} bean that owns a Unix-domain-socket
  * listener serving a Casciian {@link TApplication} per connection.
  *
- * <p>This is the lightweight alternative to {@link CasciianSshServer} for
+ * <p>This is the lightweight alternative to {@link io.github.crramirez.casciian.spring.ssh.CasciianSshServer} for
  * containerized deployments where {@code docker exec}, {@code kubectl exec}
  * or ArgoCD already provide an authenticated shell. The Spring-side
  * application binds a socket file (typically under {@code /tmp}), and the

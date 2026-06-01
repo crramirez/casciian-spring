@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import io.github.crramirez.casciian.spring.CasciianUnixSocketServer;
+import io.github.crramirez.casciian.spring.unix.CasciianUnixSocketServer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

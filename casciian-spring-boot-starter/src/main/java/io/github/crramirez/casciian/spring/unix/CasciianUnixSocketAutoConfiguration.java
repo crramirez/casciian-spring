@@ -7,7 +7,9 @@
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
-package io.github.crramirez.casciian.spring;
+package io.github.crramirez.casciian.spring.unix;
+
+import io.github.crramirez.casciian.spring.CasciianTApplicationFactory;
 
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -22,7 +24,7 @@ import casciian.TApplication;
  * Spring Boot auto-configuration that wires the Unix-domain-socket variant
  * of the Casciian listener.
  *
- * <p>The configuration is independent of {@link CasciianSshAutoConfiguration}
+ * <p>The configuration is independent of {@link io.github.crramirez.casciian.spring.ssh.CasciianSshAutoConfiguration}
  * so the two listeners can be enabled together, separately, or both
  * disabled. Both rely on the same user-supplied
  * {@link CasciianTApplicationFactory} bean — there is one TUI definition,

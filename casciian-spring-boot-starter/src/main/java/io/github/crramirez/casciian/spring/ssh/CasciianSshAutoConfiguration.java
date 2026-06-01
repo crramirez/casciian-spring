@@ -7,7 +7,9 @@
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
-package io.github.crramirez.casciian.spring;
+package io.github.crramirez.casciian.spring.ssh;
+
+import io.github.crramirez.casciian.spring.CasciianTApplicationFactory;
 
 import org.apache.sshd.server.auth.password.PasswordAuthenticator;
 import org.apache.sshd.server.auth.password.RejectAllPasswordAuthenticator;
