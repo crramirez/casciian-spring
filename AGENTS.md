@@ -144,7 +144,7 @@ xdg-open http://localhost:8080/
 # Admin TUI over SSH (defaults — credentials are demo-only)
 ssh admin@localhost -p 2222     # password: admin
 
-# Admin TUI over the Unix socket (same JVM, no SSH daemon needed)
+# Admin TUI over the Unix socket (no SSH daemon needed)
 java -jar demo-shop/build/libs/demo-shop-*.jar console
 ```
 

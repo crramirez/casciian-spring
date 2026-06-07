@@ -99,6 +99,7 @@ public class AdminTApplication extends TApplication {
 
     private void buildMenus() {
         addFileMenu();
+        addEditMenu();
 
         final TMenu productsMenu = addMenu("&Products");
         productsMenu.addItem(MID_PRODUCTS_REFRESH, "&Refresh");
